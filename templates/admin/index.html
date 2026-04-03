@@ -12,5 +12,41 @@
 </div>
 {% endif %}
 
+{% if request.user.role == 'CENTER_ADMIN' %}
+<div style="margin-bottom: 20px; padding: 16px; border: 1px solid #d0d5dd; border-radius: 10px; background: #f8fafc;">
+  <h2 style="margin-top:0;">Панель администрации</h2>
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <a class="button" href="{% url 'admin:crm_studygroup_changelist' %}">Группы</a>
+    <a class="button" href="{% url 'admin:crm_groupenrollment_changelist' %}">Зачисления</a>
+    <a class="button" href="{% url 'admin:crm_payment_changelist' %}">Платежи</a>
+    <a class="button" href="{% url 'admin:crm_attendancerecord_changelist' %}">Посещаемость</a>
+  </div>
+</div>
+{% endif %}
+
+{% if request.user.role == 'TEACHER' %}
+<div style="margin-bottom: 20px; padding: 16px; border: 1px solid #d0d5dd; border-radius: 10px; background: #f8fafc;">
+  <h2 style="margin-top:0;">Панель учителя</h2>
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <a class="button" href="{% url 'admin:crm_studygroup_changelist' %}">Мои группы</a>
+    <a class="button" href="{% url 'admin:crm_lesson_changelist' %}">Мои уроки</a>
+    <a class="button" href="{% url 'admin:crm_attendancerecord_changelist' %}">Посещаемость</a>
+    <a class="button" href="{% url 'admin:crm_user_changelist' %}">Мой профиль</a>
+  </div>
+</div>
+{% endif %}
+
+{% if request.user.role == 'STUDENT' %}
+<div style="margin-bottom: 20px; padding: 16px; border: 1px solid #d0d5dd; border-radius: 10px; background: #f8fafc;">
+  <h2 style="margin-top:0;">Панель студента</h2>
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <a class="button" href="{% url 'admin:crm_user_changelist' %}">Мои данные</a>
+    <a class="button" href="{% url 'admin:crm_studygroup_changelist' %}">Мои группы</a>
+    <a class="button" href="{% url 'admin:crm_attendancerecord_changelist' %}">Моя посещаемость</a>
+    <a class="button" href="{% url 'admin:crm_payment_changelist' %}">Мои платежи</a>
+  </div>
+</div>
+{% endif %}
+
 {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
 {% endblock %}

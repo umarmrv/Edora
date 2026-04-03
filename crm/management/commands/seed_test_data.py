@@ -89,6 +89,7 @@ class Command(BaseCommand):
                     last_name="Testov",
                     phone_student=f"+992900000{index:02d}",
                     school_name="School #1",
+                    is_staff=True,
                 )
             )
 

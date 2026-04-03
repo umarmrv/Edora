@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from crm.models import AttendanceRecord, BillingCycle, GroupEnrollment, Lesson, Payment, UserExitRecord
+from crm.models import AttendanceRecord, BillingCycle, GroupEnrollment, Lesson, Payment, TestAttempt, UserExitRecord
 
 LESSONS_PER_CYCLE = 12
 
@@ -62,3 +62,19 @@ def user_exit_handler(sender, instance: UserExitRecord, created: bool, **kwargs)
     user.is_active_in_center = False
     user.is_active = False
     user.save(update_fields=["is_active_in_center", "is_active"])
+
+
+@receiver(post_save, sender=TestAttempt)
+def sync_user_placement_from_test(sender, instance: TestAttempt, created: bool, **kwargs):
+    if not instance.is_final:
+        return
+
+    user = instance.user
+    user.placement_score_percent = instance.score_percent
+    user.placement_level = instance.level
+
+    if user.role in {user.Role.STUDENT, user.Role.TEACHER} and not hasattr(user, "exit_record"):
+        user.is_active_in_center = True
+        user.is_active = True
+
+    user.save(update_fields=["placement_score_percent", "placement_level", "is_active_in_center", "is_active"])

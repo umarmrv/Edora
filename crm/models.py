@@ -22,6 +22,12 @@ class User(AbstractUser):
         AFTERNOON = "AFTERNOON", "День"
         EVENING = "EVENING", "Вечер"
 
+    class PlacementLevel(models.TextChoices):
+        BEGINNER = "BEGINNER", "Начальный"
+        BASIC = "BASIC", "Базовый"
+        INTERMEDIATE = "INTERMEDIATE", "Средний"
+        ADVANCED = "ADVANCED", "Продвинутый"
+
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.STUDENT)
     middle_name = models.CharField(max_length=150, blank=True)
     phone_student = models.CharField(max_length=32, blank=True)
@@ -30,6 +36,10 @@ class User(AbstractUser):
     photo = models.ImageField(upload_to="profiles/", blank=True, null=True)
     school_name = models.CharField(max_length=255, blank=True)
     school_shift = models.CharField(max_length=20, choices=SchoolShift.choices, blank=True)
+    teacher_specialization = models.CharField(max_length=255, blank=True)
+    teacher_experience_years = models.PositiveSmallIntegerField(null=True, blank=True)
+    placement_score_percent = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    placement_level = models.CharField(max_length=20, choices=PlacementLevel.choices, blank=True)
     is_active_in_center = models.BooleanField(default=True)
     joined_center_at = models.DateTimeField(default=timezone.now)
 
@@ -41,6 +51,10 @@ class User(AbstractUser):
     def full_name(self) -> str:
         parts = [self.last_name, self.first_name, self.middle_name]
         return " ".join([part for part in parts if part]).strip() or self.username
+
+    @property
+    def latest_final_attempt(self):
+        return self.test_attempts.filter(is_final=True).order_by("-taken_at").first()
 
 
 class Subject(models.Model):

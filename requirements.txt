@@ -1,5 +1,6 @@
 asgiref==3.11.1
 attrs==25.4.0
+charset-normalizer==3.4.7
 Django==6.0.2
 django-filter==25.2
 django-unfold==0.78.1
@@ -10,6 +11,8 @@ inflection==0.5.1
 iniconfig==2.3.0
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
+lxml==6.0.2
+openpyxl==3.1.5
 packaging==26.0
 pillow==12.1.0
 pluggy==1.6.0
@@ -19,8 +22,11 @@ Pygments==2.19.2
 PyJWT==2.11.0
 pytest==9.0.2
 pytest-django==4.11.1
+python-docx==1.2.0
 PyYAML==6.0.3
 referencing==0.37.0
+reportlab==4.4.10
 rpds-py==0.30.0
 sqlparse==0.5.5
+typing_extensions==4.15.0
 uritemplate==4.2.0

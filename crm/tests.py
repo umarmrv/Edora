@@ -9,7 +9,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from crm.models import BillingCycle, GroupEnrollment, Lesson, Payment, StudyGroup, Subject
+from crm.models import BillingCycle, GroupEnrollment, Lesson, Payment, PlacementTest, StudyGroup, Subject, TestAttempt
 from crm.services import cycle_finance_report, teacher_performance_report
 
 User = get_user_model()
@@ -203,3 +203,35 @@ class SeedDataCommandTests(TestCase):
         self.assertGreaterEqual(Payment.objects.count(), 12)
         self.assertTrue(Payment.objects.filter(status=Payment.Status.PARTIAL).exists())
         self.assertTrue(User.objects.filter(is_active_in_center=False).exists())
+
+
+class PlacementSyncTests(TestCase):
+    def test_final_test_attempt_updates_user_level_and_score(self):
+        student = User.objects.create_user(
+            username="placement_student",
+            password="pass12345",
+            role=User.Role.STUDENT,
+            is_active=False,
+            is_active_in_center=False,
+            is_staff=True,
+        )
+        test = PlacementTest.objects.create(
+            title="Student Placement",
+            target_role=User.Role.STUDENT,
+            question_count=100,
+            is_active=True,
+        )
+
+        TestAttempt.objects.create(
+            user=student,
+            test=test,
+            total_questions=100,
+            correct_answers=81,
+            is_final=True,
+        )
+
+        student.refresh_from_db()
+        self.assertEqual(student.placement_level, User.PlacementLevel.ADVANCED)
+        self.assertEqual(str(student.placement_score_percent), "81.00")
+        self.assertTrue(student.is_active)
+        self.assertTrue(student.is_active_in_center)
