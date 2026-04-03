@@ -1,12 +1,106 @@
 {% extends "admin/base_site.html" %}
 
 {% block content %}
-<div style="display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:16px;">
+<style>
+  .report-header {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .report-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    background: #f8fafc;
+  }
+  .report-filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .report-filters select,
+  .report-filters input {
+    min-height: 36px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 4px 10px;
+    background: #ffffff;
+  }
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .metric-card {
+    border: 1px solid #d0d5dd;
+    padding: 12px;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+  .metric-card strong {
+    color: #344054;
+    font-size: 13px;
+  }
+  .metric-value {
+    margin-top: 6px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ffffff;
+    margin-bottom: 14px;
+  }
+  .report-table thead th {
+    background: #eef2f6;
+    color: #111827;
+    text-align: left;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #d0d5dd;
+  }
+  .report-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eaecf0;
+    font-size: 13px;
+  }
+  .report-table tbody tr:nth-child(even) {
+    background: #fafbfc;
+  }
+  .report-table tbody tr:hover {
+    background: #f2f7ff;
+  }
+  .money-paid {
+    color: #18794e;
+    font-weight: 700;
+  }
+  .money-debt {
+    color: #b42318;
+    font-weight: 700;
+  }
+</style>
+
+<div class="report-header">
   <h1>{{ title }}</h1>
   <a class="button" href="{{ teacher_stats_url }}">Открыть статистику учителей</a>
 </div>
 
-<form method="get" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+<form method="get" class="report-filters">
   <label>Период
     <select name="period">
       <option value="day" {% if selected_period == 'day' %}selected{% endif %}>За день</option>
@@ -42,19 +136,21 @@
     </select>
   </label>
 
-  <button type="submit" class="button">Применить</button>
+  <label style="align-self:end;">
+    <button type="submit" class="button">Применить</button>
+  </label>
 </form>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:24px;">
-  <div style="border:1px solid #d0d5dd;padding:12px;border-radius:8px;"><strong>Начислено</strong><br>{{ summary.total_due }}</div>
-  <div style="border:1px solid #d0d5dd;padding:12px;border-radius:8px;"><strong>Оплачено</strong><br>{{ summary.total_paid }}</div>
-  <div style="border:1px solid #d0d5dd;padding:12px;border-radius:8px;"><strong>Частично оплачено</strong><br>{{ summary.total_partial_paid }}</div>
-  <div style="border:1px solid #d0d5dd;padding:12px;border-radius:8px;"><strong>Задолженность</strong><br>{{ summary.total_debt }}</div>
-  <div style="border:1px solid #d0d5dd;padding:12px;border-radius:8px;"><strong>Доля оплаченного</strong><br>{{ summary.paid_ratio }}%</div>
+<div class="metric-grid">
+  <div class="metric-card"><strong>Начислено</strong><div class="metric-value">{{ summary.total_due }}</div></div>
+  <div class="metric-card"><strong>Оплачено</strong><div class="metric-value money-paid">{{ summary.total_paid }}</div></div>
+  <div class="metric-card"><strong>Частично оплачено</strong><div class="metric-value">{{ summary.total_partial_paid }}</div></div>
+  <div class="metric-card"><strong>Задолженность</strong><div class="metric-value money-debt">{{ summary.total_debt }}</div></div>
+  <div class="metric-card"><strong>Доля оплаченного</strong><div class="metric-value">{{ summary.paid_ratio }}%</div></div>
 </div>
 
 <h2>Должники</h2>
-<table>
+<table class="report-table">
   <thead>
     <tr>
       <th>Ученик</th>
@@ -69,7 +165,7 @@
       <td>{{ row.student_name }}</td>
       <td>{{ row.subject_name }}</td>
       <td>{{ row.group_name }}</td>
-      <td>{{ row.debt_amount }}</td>
+      <td class="money-debt">{{ row.debt_amount }}</td>
     </tr>
     {% empty %}
     <tr>
@@ -81,7 +177,7 @@
 
 {% if not selected_subject %}
 <h2 style="margin-top:20px;">Сводка по предметам (весь центр)</h2>
-<table>
+<table class="report-table">
   <thead>
     <tr>
       <th>Предмет</th>
@@ -95,8 +191,8 @@
     <tr>
       <td>{{ row.subject_name }}</td>
       <td>{{ row.due }}</td>
-      <td>{{ row.paid }}</td>
-      <td>{{ row.debt }}</td>
+      <td class="money-paid">{{ row.paid }}</td>
+      <td class="money-debt">{{ row.debt }}</td>
     </tr>
     {% empty %}
     <tr>

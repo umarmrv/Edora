@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.forms import ModelForm
 from django.urls import path
 from django.utils.html import format_html
@@ -93,12 +93,46 @@ class UserAdmin(DjangoUserAdmin):
                     "phone_student",
                     "phone_parent",
                     "address",
+                    "photo",
                     "school_name",
                     "school_shift",
                 )
             },
         ),
     )
+
+    def _filter_fieldsets(self, fieldsets, forbidden_fields: set[str]):
+        filtered = []
+        for section, options in fieldsets:
+            fields = options.get("fields", ())
+            updated_fields = []
+            for field in fields:
+                if isinstance(field, (tuple, list)):
+                    nested = tuple(item for item in field if item not in forbidden_fields)
+                    if nested:
+                        updated_fields.append(nested)
+                elif field not in forbidden_fields:
+                    updated_fields.append(field)
+
+            if updated_fields:
+                filtered.append((section, {**options, "fields": tuple(updated_fields)}))
+        return tuple(filtered)
+
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+        forbidden_fields = {"groups", "user_permissions"}
+        if is_center_admin(request.user):
+            forbidden_fields.update({"is_superuser", "is_staff"})
+        return self._filter_fieldsets(fieldsets, forbidden_fields)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if "role" in form.base_fields and is_center_admin(request.user):
+            form.base_fields["role"].choices = [
+                (User.Role.TEACHER, User.Role.TEACHER.label),
+                (User.Role.STUDENT, User.Role.STUDENT.label),
+            ]
+        return form
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -119,6 +153,29 @@ class UserAdmin(DjangoUserAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return is_super_admin(request.user)
+
+    def save_model(self, request, obj, form, change):
+        if is_center_admin(request.user) and obj.role not in {User.Role.TEACHER, User.Role.STUDENT}:
+            raise PermissionDenied("Администрация центра может создавать только Учителей и Студентов.")
+
+        if obj.role == User.Role.STUDENT:
+            obj.is_staff = False
+            obj.is_superuser = False
+        elif obj.role == User.Role.TEACHER:
+            obj.is_staff = True
+            obj.is_superuser = False
+        elif obj.role == User.Role.CENTER_ADMIN:
+            obj.is_staff = True
+            obj.is_superuser = False
+        elif obj.role == User.Role.SUPER_ADMIN:
+            obj.is_staff = True
+            obj.is_superuser = True
+
+        super().save_model(request, obj, form, change)
+
+        if obj.role in {User.Role.STUDENT, User.Role.TEACHER, User.Role.CENTER_ADMIN}:
+            obj.groups.clear()
+            obj.user_permissions.clear()
 
 
 @admin.register(Subject)

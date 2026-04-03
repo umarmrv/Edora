@@ -1,12 +1,82 @@
 {% extends "admin/base_site.html" %}
 
 {% block content %}
-<div style="display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:16px;">
+<style>
+  .report-header {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .report-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    background: #f8fafc;
+  }
+  .report-filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .report-filters select,
+  .report-filters input {
+    min-height: 36px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 4px 10px;
+    background: #ffffff;
+  }
+  .report-summary {
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #f2f4f7;
+    font-size: 14px;
+  }
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ffffff;
+  }
+  .report-table thead th {
+    background: #eef2f6;
+    color: #111827;
+    text-align: left;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #d0d5dd;
+  }
+  .report-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eaecf0;
+    font-size: 13px;
+  }
+  .report-table tbody tr:nth-child(even) {
+    background: #fafbfc;
+  }
+  .report-table tbody tr:hover {
+    background: #f2f7ff;
+  }
+</style>
+
+<div class="report-header">
   <h1>{{ title }}</h1>
   <a class="button" href="{{ finance_url }}">Открыть финансы по циклам</a>
 </div>
 
-<form method="get" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+<form method="get" class="report-filters">
   <label>Период
     <select name="period">
       <option value="day" {% if selected_period == 'day' %}selected{% endif %}>За день</option>
@@ -42,12 +112,14 @@
     </select>
   </label>
 
-  <button type="submit" class="button">Применить</button>
+  <label style="align-self:end;">
+    <button type="submit" class="button">Применить</button>
+  </label>
 </form>
 
-<p><strong>Всего проведено уроков:</strong> {{ total_lessons }}</p>
+<div class="report-summary"><strong>Всего проведено уроков:</strong> {{ total_lessons }}</div>
 
-<table>
+<table class="report-table">
   <thead>
     <tr>
       <th>Учитель</th>
