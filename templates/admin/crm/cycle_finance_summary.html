@@ -1,0 +1,109 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div style="display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:16px;">
+  <h1>{{ title }}</h1>
+  <a class="button" href="{{ teacher_stats_url }}">Открыть статистику учителей</a>
+</div>
+
+<form method="get" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+  <label>Период
+    <select name="period">
+      <option value="day" {% if selected_period == 'day' %}selected{% endif %}>За день</option>
+      <option value="week" {% if selected_period == 'week' %}selected{% endif %}>За 7 дней</option>
+      <option value="month" {% if selected_period == 'month' %}selected{% endif %}>За месяц</option>
+      <option value="custom" {% if selected_period == 'custom' %}selected{% endif %}>Произвольный</option>
+    </select>
+  </label>
+
+  <label>Дата от
+    <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+  </label>
+
+  <label>Дата до
+    <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+  </label>
+
+  <label>Предмет
+    <select name="subject">
+      <option value="">Все предметы</option>
+      {% for subject in subjects %}
+      <option value="{{ subject.id }}" {% if selected_subject == subject.id %}selected{% endif %}>{{ subject.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Группа
+    <select name="group">
+      <option value="">Все группы</option>
+      {% for group in groups %}
+      <option value="{{ group.id }}" {% if selected_group == group.id %}selected{% endif %}>{{ group.subject.name }} / {{ group.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <button type="submit" class="button">Применить</button>
+</form>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:24px;">
+  <div style="border:1px solid #d0d5dd;padding:12px;border-radius:8px;"><strong>Начислено</strong><br>{{ summary.total_due }}</div>
+  <div style="border:1px solid #d0d5dd;padding:12px;border-radius:8px;"><strong>Оплачено</strong><br>{{ summary.total_paid }}</div>
+  <div style="border:1px solid #d0d5dd;padding:12px;border-radius:8px;"><strong>Частично оплачено</strong><br>{{ summary.total_partial_paid }}</div>
+  <div style="border:1px solid #d0d5dd;padding:12px;border-radius:8px;"><strong>Задолженность</strong><br>{{ summary.total_debt }}</div>
+  <div style="border:1px solid #d0d5dd;padding:12px;border-radius:8px;"><strong>Доля оплаченного</strong><br>{{ summary.paid_ratio }}%</div>
+</div>
+
+<h2>Должники</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Ученик</th>
+      <th>Предмет</th>
+      <th>Группа</th>
+      <th>Сумма долга</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in summary.debtors %}
+    <tr>
+      <td>{{ row.student_name }}</td>
+      <td>{{ row.subject_name }}</td>
+      <td>{{ row.group_name }}</td>
+      <td>{{ row.debt_amount }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="4">Должников по выбранному срезу нет.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if not selected_subject %}
+<h2 style="margin-top:20px;">Сводка по предметам (весь центр)</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Предмет</th>
+      <th>Начислено</th>
+      <th>Оплачено</th>
+      <th>Задолженность</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in summary.subject_breakdown %}
+    <tr>
+      <td>{{ row.subject_name }}</td>
+      <td>{{ row.due }}</td>
+      <td>{{ row.paid }}</td>
+      <td>{{ row.debt }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="4">Нет данных по предметам.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

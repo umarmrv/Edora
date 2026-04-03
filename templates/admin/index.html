@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+{% if request.user.role == 'SUPER_ADMIN' or request.user.is_superuser %}
+<div style="margin-bottom: 20px; padding: 16px; border: 1px solid #d0d5dd; border-radius: 10px; background: #f8fafc;">
+  <h2 style="margin-top:0;">Аналитика Супер-админа</h2>
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <a class="button" href="{% url 'admin:crm_teacher_performance' %}">Статистика учителей</a>
+    <a class="button" href="{% url 'admin:crm_cycle_finance_summary' %}">Финансы по циклам</a>
+  </div>
+</div>
+{% endif %}
+
+{% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+{% endblock %}
