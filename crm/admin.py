@@ -144,6 +144,7 @@ class TestAttemptInline(admin.TabularInline):
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
+    show_add_link = True
     conditional_fields = {}
 
     list_display = (

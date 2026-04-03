@@ -231,6 +231,13 @@ class CRMAnalyticsTests(TestCase):
         response = client.get(f"/admin/crm/user/{student.pk}/change/")
         self.assertEqual(response.status_code, 200)
 
+    def test_center_admin_sees_add_button_on_user_changelist(self):
+        client = Client()
+        client.login(username="admin", password="pass12345")
+        response = client.get("/admin/crm/user/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "/admin/crm/user/add/")
+
     def test_user_pdf_export_returns_file_with_photo(self):
         client = Client()
         client.login(username="super", password="pass12345")
