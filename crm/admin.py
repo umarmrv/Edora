@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 from datetime import timedelta
 from io import BytesIO
+from pathlib import Path
 
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
@@ -42,9 +44,15 @@ except ImportError:  # pragma: no cover
 
 try:
     from reportlab.lib.pagesizes import A4
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.pdfgen import canvas
 except ImportError:  # pragma: no cover
     A4 = None
+    ImageReader = None
+    pdfmetrics = None
+    TTFont = None
     canvas = None
 
 try:
@@ -67,6 +75,40 @@ def is_teacher(user: User) -> bool:
 
 def is_student(user: User) -> bool:
     return bool(user.is_authenticated and user.role == User.Role.STUDENT)
+
+
+_PDF_FONT_NAME = "Helvetica"
+_PDF_FONT_REGISTERED = False
+
+
+def resolve_pdf_font() -> str:
+    global _PDF_FONT_NAME, _PDF_FONT_REGISTERED
+    if _PDF_FONT_REGISTERED:
+        return _PDF_FONT_NAME
+
+    _PDF_FONT_REGISTERED = True
+    if not pdfmetrics or not TTFont:
+        return _PDF_FONT_NAME
+
+    font_candidates = [
+        Path("/System/Library/Fonts/Supplemental/Arial Unicode.ttf"),
+        Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
+        Path("/Library/Fonts/Arial Unicode.ttf"),
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        Path("C:/Windows/Fonts/arial.ttf"),
+    ]
+
+    for font_path in font_candidates:
+        if not font_path.exists():
+            continue
+        try:
+            pdfmetrics.registerFont(TTFont("EdoraUnicode", str(font_path)))
+            _PDF_FONT_NAME = "EdoraUnicode"
+            break
+        except Exception:
+            continue
+
+    return _PDF_FONT_NAME
 
 
 class UserExitRecordForm(ModelForm):
@@ -498,13 +540,33 @@ class UserAdmin(DjangoUserAdmin):
         buffer = BytesIO()
         pdf = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
+        body_font = resolve_pdf_font()
+        title_font = body_font if body_font != "Helvetica" else "Helvetica-Bold"
 
         y = height - 40
-        pdf.setFont("Helvetica-Bold", 14)
+        pdf.setFont(title_font, 14)
         pdf.drawString(40, y, "Карточка пользователя")
         y -= 24
 
-        pdf.setFont("Helvetica", 10)
+        # Draw user photo when available.
+        if ImageReader and obj.photo:
+            try:
+                photo_path = obj.photo.path
+                if photo_path and os.path.exists(photo_path):
+                    image = ImageReader(photo_path)
+                    pdf.drawImage(
+                        image,
+                        width - 150,
+                        height - 180,
+                        width=100,
+                        height=120,
+                        preserveAspectRatio=True,
+                        mask="auto",
+                    )
+            except Exception:
+                pass
+
+        pdf.setFont(body_font, 10)
         lines = [
             f"Логин: {obj.username}",
             f"ФИО: {obj.full_name}",
@@ -518,25 +580,25 @@ class UserAdmin(DjangoUserAdmin):
         ]
 
         for line in lines:
-            pdf.drawString(40, y, line)
+            pdf.drawString(40, y, line[:120])
             y -= 16
             if y < 80:
                 pdf.showPage()
-                pdf.setFont("Helvetica", 10)
+                pdf.setFont(body_font, 10)
                 y = height - 40
 
         if obj.role == User.Role.STUDENT:
-            pdf.setFont("Helvetica-Bold", 11)
+            pdf.setFont(title_font, 11)
             pdf.drawString(40, y, "Группы студента:")
             y -= 18
-            pdf.setFont("Helvetica", 10)
+            pdf.setFont(body_font, 10)
             enrollments = GroupEnrollment.objects.filter(student=obj, is_active=True).select_related("group__subject")
             for enrollment in enrollments:
-                pdf.drawString(50, y, f"- {enrollment.group.subject.name} / {enrollment.group.name}")
+                pdf.drawString(50, y, f"- {enrollment.group.subject.name} / {enrollment.group.name}"[:110])
                 y -= 14
                 if y < 80:
                     pdf.showPage()
-                    pdf.setFont("Helvetica", 10)
+                    pdf.setFont(body_font, 10)
                     y = height - 40
 
         pdf.showPage()

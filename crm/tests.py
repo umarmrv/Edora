@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -229,6 +230,31 @@ class CRMAnalyticsTests(TestCase):
 
         response = client.get(f"/admin/crm/user/{student.pk}/change/")
         self.assertEqual(response.status_code, 200)
+
+    def test_user_pdf_export_returns_file_with_photo(self):
+        client = Client()
+        client.login(username="super", password="pass12345")
+
+        # 1x1 transparent PNG.
+        png_bytes = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+            b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0cIDATx\x9cc``\x00\x00"
+            b"\x00\x04\x00\x01\x0b\xe7\x02\x9d\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+        student = User.objects.create_user(
+            username="student_with_photo_pdf",
+            password="pass12345",
+            role=User.Role.STUDENT,
+            is_staff=True,
+            first_name="Тест",
+            last_name="Студент",
+            photo=SimpleUploadedFile("avatar.png", png_bytes, content_type="image/png"),
+        )
+
+        response = client.get(reverse("admin:crm_user_export_pdf", args=[student.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertTrue(response.content.startswith(b"%PDF"))
 
 
 class SeedDataCommandTests(TestCase):
