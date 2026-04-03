@@ -4,6 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -188,3 +189,17 @@ class CRMAnalyticsTests(TestCase):
         response = client.get(reverse("admin:crm_cycle_finance_summary"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Финансы по циклам")
+
+
+class SeedDataCommandTests(TestCase):
+    def test_seed_command_creates_demo_entities(self):
+        call_command("seed_test_data")
+
+        self.assertTrue(User.objects.filter(username="superadmin", role=User.Role.SUPER_ADMIN).exists())
+        self.assertTrue(User.objects.filter(username="centeradmin", role=User.Role.CENTER_ADMIN).exists())
+        self.assertEqual(Subject.objects.count(), 4)
+        self.assertGreaterEqual(StudyGroup.objects.count(), 4)
+        self.assertGreaterEqual(Lesson.objects.count(), 56)
+        self.assertGreaterEqual(Payment.objects.count(), 12)
+        self.assertTrue(Payment.objects.filter(status=Payment.Status.PARTIAL).exists())
+        self.assertTrue(User.objects.filter(is_active_in_center=False).exists())
