@@ -101,6 +101,8 @@ class TestAttemptInline(admin.TabularInline):
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
+    conditional_fields = {}
+
     list_display = (
         "username",
         "full_name",
@@ -299,6 +301,7 @@ class UserAdmin(DjangoUserAdmin):
         return is_super_admin(request.user)
 
     def save_model(self, request, obj, form, change):
+        is_new = obj.pk is None
         if is_center_admin(request.user) and obj.role not in {User.Role.TEACHER, User.Role.STUDENT}:
             raise PermissionDenied("Администрация центра может создавать только Учителей и Студентов.")
 
@@ -315,8 +318,9 @@ class UserAdmin(DjangoUserAdmin):
             obj.is_staff = True
             obj.is_superuser = True
 
-        if obj.role in {User.Role.STUDENT, User.Role.TEACHER} and not obj.test_attempts.filter(is_final=True).exists():
+        if obj.role in {User.Role.STUDENT, User.Role.TEACHER} and is_new:
             obj.is_active_in_center = False
+            obj.is_active = False
 
         super().save_model(request, obj, form, change)
 
@@ -324,12 +328,18 @@ class UserAdmin(DjangoUserAdmin):
             obj.groups.clear()
             obj.user_permissions.clear()
 
-        if obj.role in {User.Role.STUDENT, User.Role.TEACHER} and not obj.test_attempts.filter(is_final=True).exists():
-            self.message_user(
-                request,
-                "Пользователь сохранен, но не активирован в центре до завершения тестирования.",
-                level=messages.WARNING,
-            )
+        if obj.role in {User.Role.STUDENT, User.Role.TEACHER}:
+            has_final_attempt = TestAttempt.objects.filter(user_id=obj.pk, is_final=True).exists()
+            if not has_final_attempt and (obj.is_active_in_center or obj.is_active):
+                obj.is_active_in_center = False
+                obj.is_active = False
+                obj.save(update_fields=["is_active_in_center", "is_active"])
+            if not has_final_attempt:
+                self.message_user(
+                    request,
+                    "Пользователь сохранен, но не активирован в центре до завершения тестирования.",
+                    level=messages.WARNING,
+                )
 
     @admin.display(description="Фото")
     def photo_preview(self, obj: User):

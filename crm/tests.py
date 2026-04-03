@@ -190,6 +190,29 @@ class CRMAnalyticsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Финансы по циклам")
 
+    def test_admin_can_create_user_without_server_error(self):
+        client = Client()
+        client.login(username="super", password="pass12345")
+        response = client.post(
+            "/admin/crm/user/add/",
+            data={
+                "username": "new_user_for_add_test",
+                "password1": "StrongPass123!",
+                "password2": "StrongPass123!",
+                "role": User.Role.STUDENT,
+                "_save": "Save",
+                "test_attempts-TOTAL_FORMS": "0",
+                "test_attempts-INITIAL_FORMS": "0",
+                "test_attempts-MIN_NUM_FORMS": "0",
+                "test_attempts-MAX_NUM_FORMS": "1000",
+            },
+            follow=False,
+        )
+        self.assertEqual(response.status_code, 302)
+        created = User.objects.get(username="new_user_for_add_test")
+        self.assertFalse(created.is_active)
+        self.assertFalse(created.is_active_in_center)
+
 
 class SeedDataCommandTests(TestCase):
     def test_seed_command_creates_demo_entities(self):
