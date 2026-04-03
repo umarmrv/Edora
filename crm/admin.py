@@ -12,6 +12,7 @@ from django.http import HttpRequest, HttpResponse
 from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 
 from crm.admin_views import cycle_finance_summary_view, teacher_performance_view
 from crm.models import (
@@ -399,7 +400,7 @@ class UserAdmin(DjangoUserAdmin):
                 f"Одногруппники: {classmates}</div>"
             )
 
-        return format_html("".join(chunks))
+        return mark_safe("".join(chunks))
 
     @admin.display(description="Успеваемость за 3 месяца")
     def student_progress_last_3_months(self, obj: User):

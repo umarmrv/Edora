@@ -213,6 +213,23 @@ class CRMAnalyticsTests(TestCase):
         self.assertFalse(created.is_active)
         self.assertFalse(created.is_active_in_center)
 
+    def test_student_change_page_renders_without_500(self):
+        client = Client()
+        client.login(username="super", password="pass12345")
+
+        student = User.objects.create_user(
+            username="student_profile_page",
+            password="pass12345",
+            role=User.Role.STUDENT,
+            is_staff=True,
+            first_name="Profile",
+            last_name="Student",
+        )
+        GroupEnrollment.objects.create(group=self.group_rus, student=student)
+
+        response = client.get(f"/admin/crm/user/{student.pk}/change/")
+        self.assertEqual(response.status_code, 200)
+
 
 class SeedDataCommandTests(TestCase):
     def test_seed_command_creates_demo_entities(self):
